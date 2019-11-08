@@ -22,6 +22,11 @@ defmodule Andi.EventHandler do
     merge(:user_to_orgs, user_id, &add_to_set(&1, org_id))
   end
 
+  def handle_event(%Brook.Event{type: "migration:modifiedDateTime"}) do
+    Andi.Migration.ModifiedDateMigration.do_migration()
+    :discard
+  end
+
   defp add_to_set(nil, id), do: MapSet.new([id])
   defp add_to_set(set, id), do: MapSet.put(set, id)
 end
