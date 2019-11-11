@@ -18,4 +18,25 @@ defmodule Andi.Migration.ModifiedDateMigration do
   defp fix_timing(dataset) do
     dataset
   end
+
+  defp try_parse(modified_date) do
+    format_strings = [
+      "%-m/%-d/%y",
+      "%B %d, %Y",
+      "%-m/%-d/%Y",
+      "%Y-%m-%d",
+      "%b %d, %Y",
+    ]
+
+    results = Enum.map(format_strings, fn x -> Timex.parse(modified_date, x, :strftime) end)
+    ok_dates = for {:ok, term} <- results, do: term
+
+    if length(ok_dates) > 0 do
+      ok_dates
+      |> List.first()
+      |> DateTime.from_naive!("Etc/UTC")
+      |> DateTime.to_iso8601()
+    else
+      nil
+    end
 end
