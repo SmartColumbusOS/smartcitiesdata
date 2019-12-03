@@ -85,8 +85,13 @@ defmodule Reaper.Migrations do
   defp migrate_quantum_task() do
     Reaper.Quantum.Storage.jobs(Reaper.Scheduler)
     |> case do
-      :not_applicable -> :ok
-      jobs -> Enum.each(jobs, &migrate_brook_args/1)
+      :not_applicable ->
+        :ok
+
+      jobs ->
+        Enum.each(jobs, &migrate_brook_args/1)
+        # Must be run after the brook args migration
+        Enum.each(jobs, &migrate_to_new_struct/1)
     end
   end
 
@@ -109,4 +114,25 @@ defmodule Reaper.Migrations do
     new_args = [@instance | args]
     %{job | task: {Brook.Event, :send, new_args}}
   end
+
+  defp migrate_to_new_struct(%{
+         task: {Brook.Event, :send, [_, _, _, %SmartCity.Dataset{technical: %{topLevelSelector: _}}]}
+       }),
+       do: :ok
+
+  defp migrate_to_new_struct(%{name: name, task: {Brook.Event, :send, [_, _, _, %SmartCity.Dataset{}] = args}}) do
+    Reaper.Quantum.Storage.delete_job(Reaper.Scheduler, name)
+
+    updated_args =
+      List.update_at(args, 3, fn dataset ->
+        new_technical = dataset.technical |> Map.from_struct()
+        Map.put(dataset, :technical, struct(SmartCity.Dataset.Technical, new_technical))
+      end)
+
+    IO.inspect(updated_args, label: "updated")
+    Reaper.Quantum.Storage.add_job(Reaper.Scheduler, {Brook.Event, :send, updated_args})
+    IO.inspect("Added job")
+  end
+
+  defp migrate_to_new_struct(_), do: :ok
 end

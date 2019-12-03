@@ -9,13 +9,26 @@ defmodule Reaper.MigrationsTest do
 
   describe "quantum job migration" do
     @tag :capture_log
-    test "should pre-pend the brook instance to all scheduled quantum jobs" do
+
+    setup do
       Application.ensure_all_started(:redix)
 
       {:ok, redix} = Redix.start_link(host: Application.get_env(:redix, :host), name: :redix)
       {:ok, scheduler} = Reaper.Scheduler.Supervisor.start_link([])
       Process.unlink(redix)
       Process.unlink(scheduler)
+
+      on_exit(fn ->
+        kill(scheduler)
+        kill(redix)
+        Application.stop(:reaper)
+      end)
+
+      %{redix: redix, scheduler: scheduler}
+    end
+
+    test "should pre-pend the brook instance to all scheduled quantum jobs", %{redix: redix, scheduler: scheduler} do
+      Application.ensure_all_started(:redix)
 
       dataset_id = String.to_atom("old-cron-schedule")
       create_job(dataset_id)
@@ -31,8 +44,83 @@ defmodule Reaper.MigrationsTest do
         job = Reaper.Scheduler.find_job(dataset_id)
         assert job.task == {Brook.Event, :send, [@instance, "migration:test", :reaper, dataset_id]}
       end)
+    end
 
-      Application.stop(:reaper)
+    @tag :capture_log
+    test "should add the topLevelSelector field to the struct of all scheduled quantum jobs", %{
+      redix: redix,
+      scheduler: scheduler
+    } do
+      old_dataset = %{
+        __struct__: SmartCity.Dataset,
+        id: "123",
+        business: %{
+          __struct__: SmartCity.Dataset.Business,
+          authorEmail: nil,
+          authorName: nil,
+          categories: nil,
+          conformsToUri: nil,
+          contactEmail: nil,
+          contactName: nil,
+          dataTitle: nil,
+          describedByMimeType: nil,
+          describedByUrl: nil,
+          description: nil,
+          homepage: nil,
+          issuedDate: nil,
+          keywords: nil,
+          language: nil,
+          license: nil,
+          modifiedDate: nil,
+          orgTitle: nil,
+          parentDataset: nil,
+          publishFrequency: nil,
+          referenceUrls: nil,
+          rights: nil,
+          spatial: nil,
+          temporal: nil
+        },
+        technical: %{
+          __struct__: SmartCity.Dataset.Technical,
+          allow_duplicates: true,
+          authHeaders: %{},
+          authUrl: nil,
+          cadence: "never",
+          credentials: false,
+          dataName: nil,
+          orgId: nil,
+          orgName: nil,
+          private: true,
+          protocol: nil,
+          schema: [],
+          sourceFormat: nil,
+          sourceHeaders: %{},
+          sourceQueryParams: %{},
+          sourceType: "remote",
+          sourceUrl: nil,
+          systemName: nil
+        }
+      }
+
+      expected_dataset = old_dataset |> Map.put(:topLevelSelector, nil)
+
+      create_job_with_dataset(old_dataset)
+
+      IO.inspect(old_dataset, label: "OLLLLLD")
+
+      kill(scheduler)
+      kill(redix)
+
+      Application.ensure_all_started(:reaper)
+
+      Process.sleep(10_000)
+
+      eventually(fn ->
+        # assert false == true
+        job = Reaper.Scheduler.find_job(String.to_atom(old_dataset.id))
+        assert not is_nil(job)
+        assert job.task == {Brook.Event, :send, [@instance, "migration:test", :reaper, expected_dataset]}
+      end)
     end
   end
 
@@ -44,9 +132,19 @@ defmodule Reaper.MigrationsTest do
     |> Reaper.Scheduler.add_job()
   end
 
+  defp create_job_with_dataset(dataset) do
+    Reaper.Scheduler.new_job()
+    |> Quantum.Job.set_name(String.to_atom(dataset.id))
+    |> Quantum.Job.set_schedule(Crontab.CronExpression.Parser.parse!("* * * * *"))
+    |> Quantum.Job.set_task({Brook.Event, :send, [@instance, "migration:test", :reaper, dataset]})
+    |> IO.inspect(label: "JOB IN TEST")
+    |> Reaper.Scheduler.add_job()
+  end
+
   describe "extractions migration" do
     @tag :capture_log
-    test "should migrate extractions and enable all of them" do
+
+    setup do
       Application.ensure_all_started(:redix)
       Application.ensure_all_started(:faker)
 
@@ -62,6 +160,17 @@ defmodule Reaper.MigrationsTest do
 
       Process.unlink(brook)
 
+      on_exit(fn ->
+        kill(redix)
+        kill(brook)
+        Application.stop(:reaper)
+        Application.stop(:faker)
+      end)
+
+      %{brook: brook, redix: redix}
+    end
+
+    test "should migrate extractions and enable all of them", %{brook: brook, redix: redix} do
       extraction_without_enabled_flag_id = 1
       extraction_with_enabled_true_id = 2
       extraction_with_enabled_false_id = 3
@@ -101,8 +210,6 @@ defmodule Reaper.MigrationsTest do
         assert true == Brook.get!(@instance, :extractions, extraction_with_enabled_true_id)["enabled"]
         assert false == Brook.get!(@instance, :extractions, extraction_with_enabled_false_id)["enabled"]
       end)
-
-      Application.stop(:reaper)
     end
   end
 

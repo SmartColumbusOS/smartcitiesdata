@@ -53,7 +53,11 @@ defmodule Reaper.Quantum.Storage do
 
   @impl Quantum.Storage.Adapter
   def add_job(scheduler, job) do
+    IO.inspect(job, label: "Add job_job")
+    IO.inspect(scheduler, label: "Add_job scheduler")
+
     retry(fn -> set(job_key(scheduler, job.name), serialize(job)) end)
+    IO.inspect("DO WE GET THIS FAR?")
   end
 
   @impl Quantum.Storage.Adapter
@@ -63,10 +67,15 @@ defmodule Reaper.Quantum.Storage do
 
   @impl Quantum.Storage.Adapter
   def jobs(scheduler) do
+    IO.inspect("Retry 1")
+
     retry(
       fn ->
+        IO.inspect("Inside Retry anon")
+
         with {:ok, keys} when keys != [] <- keys(job_key(scheduler, "*")),
              {:ok, values} <- mget(keys) do
+          IO.inspect(values, label: "VALUES IN RETRY")
           {:ok, Enum.map(values, &deserialize/1)}
         else
           {:ok, []} -> {:ok, :not_applicable}
@@ -79,6 +88,7 @@ defmodule Reaper.Quantum.Storage do
 
   defp job_key(scheduler, job_name) do
     base_key(scheduler, "job:#{job_name}")
+    |> IO.inspect(label: "Job Key")
   end
 
   defp date_key(scheduler) do
@@ -91,6 +101,8 @@ defmodule Reaper.Quantum.Storage do
   end
 
   defp retry(function, opts \\ []) when is_function(function, 0) do
+    IO.inspect("Retry 2")
+
     Retry.retry with: Retry.DelayStreams.constant_backoff(@retry_delay) |> Stream.take(@max_retries) do
       function.()
     after
@@ -138,10 +150,16 @@ defmodule Reaper.Quantum.Storage do
   end
 
   defp serialize(job) do
+    IO.inspect("I'm about to serialize this man's whole job")
+
     :erlang.term_to_binary(job)
+    |> IO.inspect(label: "SERIALIZE")
   end
 
   defp deserialize(value) do
+    IO.inspect(value, label: "IM GOING TO DO IT")
+
     :erlang.binary_to_term(value)
+    |> IO.inspect(label: "Desearilized")
   end
 end
