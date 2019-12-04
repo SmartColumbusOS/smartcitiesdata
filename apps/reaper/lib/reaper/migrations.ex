@@ -117,10 +117,13 @@ defmodule Reaper.Migrations do
 
   defp migrate_to_new_struct(%{
          task: {Brook.Event, :send, [_, _, _, %SmartCity.Dataset{technical: %{topLevelSelector: _}}]}
-       }),
-       do: :ok
+       }) do
+    IO.puts("Migrate struct already has top level selector")
+    :ok
+  end
 
   defp migrate_to_new_struct(%{name: name, task: {Brook.Event, :send, [_, _, _, %SmartCity.Dataset{}] = args}}) do
+    IO.inspect(args, label: "Migrate struct starting")
     Reaper.Quantum.Storage.delete_job(Reaper.Scheduler, name)
 
     updated_args =
@@ -134,5 +137,8 @@ defmodule Reaper.Migrations do
     IO.inspect("Added job")
   end
 
-  defp migrate_to_new_struct(_), do: :ok
+  defp migrate_to_new_struct(_) do
+    IO.puts("Migrate struct catch all; no action taken")
+    :ok
+  end
 end
