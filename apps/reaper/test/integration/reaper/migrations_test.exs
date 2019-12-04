@@ -42,6 +42,7 @@ defmodule Reaper.MigrationsTest do
 
       eventually(fn ->
         job = Reaper.Scheduler.find_job(dataset_id)
+        assert not is_nil(job)
         assert job.task == {Brook.Event, :send, [@instance, "migration:test", :reaper, dataset_id]}
       end)
     end
@@ -98,7 +99,8 @@ defmodule Reaper.MigrationsTest do
           sourceQueryParams: %{},
           sourceType: "remote",
           sourceUrl: nil,
-          systemName: nil
+          systemName: nil,
+          topLevelSelector: nil
         }
       }
 
@@ -118,7 +120,7 @@ defmodule Reaper.MigrationsTest do
       eventually(fn ->
         # assert false == true
         job = Reaper.Scheduler.find_job(String.to_atom(old_dataset.id))
-        assert not is_nil(job)
+        assert not is_nil(job), "job should have been found"
         assert job.task == {Brook.Event, :send, [@instance, "migration:test", :reaper, expected_dataset]}
       end)
     end

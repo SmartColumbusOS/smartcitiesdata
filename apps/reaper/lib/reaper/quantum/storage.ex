@@ -108,8 +108,13 @@ defmodule Reaper.Quantum.Storage do
     after
       {:ok, value} ->
         case Keyword.get(opts, :use_return, false) do
-          true -> value
-          false -> :ok
+          true ->
+            IO.inspect(value, label: "Retry got value")
+            value
+
+          false ->
+            IO.puts("retry ok")
+            :ok
         end
     else
       e ->
