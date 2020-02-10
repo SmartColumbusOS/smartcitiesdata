@@ -41,7 +41,7 @@ jobs:
       - name: Check If Should Run
         id: pre_check
         run: |
-          cat ${HOME}/ignore
+          echo ignore:apps/andi >> ${HOME}/ignore
           git diff --exit-code --quiet ${{ env.commit_range }} -- mix.lock apps/pipeline apps/dead_letter apps/andi \
             && echo "::set-output name=should_run::true" \
             || echo "::set-output name=should_run::false"
