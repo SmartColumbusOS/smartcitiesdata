@@ -6,7 +6,7 @@ on:
       - master
 
 env:
-  commit_range: ${{ github.event_name == 'push' && format('{0}...{1}', github.event.push.before, github.event.push.head) || format('{0}...{1}', github.base_ref, github.head_ref)}}
+  commit_range: ${{ github.event_name == 'push' && format('{0}...{1}', github.event.push.before, github.event.push.head) || 'refs/heads/master'}}
 
 jobs:
   common-checks:
