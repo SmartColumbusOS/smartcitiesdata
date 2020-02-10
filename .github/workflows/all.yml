@@ -38,11 +38,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: '0'
       - name: Check If Should Run
         id: pre_check
         run: |
+          git fetch --no-tags --prune --depth=1 origin +refs/heads/*:refs/remotes/origin/*
+          git fetch --depth=1 origin +refs/tags/*:refs/tags/*
           git diff --exit-code --quiet ${{ env.commit_range }} -- mix.lock apps/pipeline apps/dead_letter apps/andi \
             && echo "::set-output name=should_run::true" \
             || echo "::set-output name=should_run::false"
