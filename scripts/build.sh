@@ -5,6 +5,6 @@ set -e
 app="${1}"
 version="${2}"
 
-docker rmi -f smartcitiesdata:build
-docker build -t smartcitiesdata:build .
-docker build -t smartcitiesdata/$app:$version apps/$app
+docker rmi -f smartcolumbusos:build
+docker build -t smartcolumbusos:build .
+docker build -t smartcolumbusos/$app:$version apps/$app
