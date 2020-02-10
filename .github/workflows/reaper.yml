@@ -33,3 +33,18 @@ jobs:
           mix deps.get
           cd apps/${{ env.app }}
           mix test.integration
+  development-docker:
+    runs-on: ubuntu-latest
+    needs: integration
+    if: github.ref == 'master'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build Docker
+        run: |
+          bash ./scripts/build.sh ${{ env.app }} development
+      - name: Publish Docker
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          bash ./scripts/publish.sh ${{ env.app }} development
