@@ -41,6 +41,7 @@ jobs:
       - name: Check If Should Run
         id: pre_check
         run: |
+          cat ${HOME}/ignore
           git diff --exit-code --quiet ${{ env.commit_range }} -- mix.lock apps/pipeline apps/dead_letter apps/andi \
             && echo "::set-output name=should_run::true" \
             || echo "::set-output name=should_run::false"
@@ -52,7 +53,7 @@ jobs:
           otp-version: 22.2
           runs-on: ubuntu-latest
       - name: Run Integration Tests
-        if: success()
+        if: steps.pre_check.outputs.should_run == 'true'
         run: |
           mix deps.get
           cd apps/andi
