@@ -1,4 +1,4 @@
-FROM smartcitiesdata:build as builder
+FROM smartcolumbusos:build as builder
 RUN MIX_ENV=prod mix distillery.release --name reaper
 
 FROM bitwalker/alpine-elixir:1.8.1
