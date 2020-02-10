@@ -42,9 +42,9 @@ jobs:
         id: pre_check
         run: |
           echo ignore:apps/andi >> ${HOME}/ignore
-          git diff --exit-code --quiet ${{ env.commit_range }} -- mix.lock apps/pipeline apps/dead_letter apps/andi \
-            && echo "::set-output name=should_run::true" \
-            || echo "::set-output name=should_run::false"
+          # git diff --exit-code --quiet ${{ env.commit_range }} -- mix.lock apps/pipeline apps/dead_letter apps/andi \
+          #   && echo "::set-output name=should_run::true" \
+          #   || echo "::set-output name=should_run::false"
       - name: Setup Elixir
         if: steps.pre_check.outputs.should_run == 'true'
         uses: actions/setup-elixir@v1.2.0
