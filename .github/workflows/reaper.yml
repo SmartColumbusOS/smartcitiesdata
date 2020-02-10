@@ -28,6 +28,7 @@ jobs:
           elixir-version: 1.8
           otp-version: 22.2
           runs-on: ubuntu-latest
+      - uses: ./common.yml
       - name: Run Unit Tests
         run: |
           mix deps.get
@@ -44,6 +45,7 @@ jobs:
     if: endsWith(github.ref, '/master')
     steps:
       - uses: actions/checkout@v2
+      - uses: ./common.yml
       - name: Build Docker
         run: |
           bash ./scripts/build.sh ${{ env.app }} development
