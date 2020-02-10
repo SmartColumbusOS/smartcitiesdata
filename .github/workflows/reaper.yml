@@ -28,7 +28,6 @@ jobs:
           elixir-version: 1.8
           otp-version: 22.2
           runs-on: ubuntu-latest
-      - uses: ./.github/actions/common
       - name: Run Unit Tests
         run: |
           mix deps.get
