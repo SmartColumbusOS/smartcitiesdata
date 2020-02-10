@@ -6,13 +6,15 @@ on:
       - master
 
 env:
-  commit_range: ${{ github.event_name == 'push' && format('{0}...{1}', github.event.push.before, github.event.push.head) || 'refs/heads/master'}}
+  commit_range: ${{ github.event_name == 'push' && format('{0}...{1}', github.event.push.before, github.event.push.head) || 'origin/master'}}
 
 jobs:
   common-checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: '0'
       - name: Setup Elixir
         uses: actions/setup-elixir@v1.2.0
         with:
