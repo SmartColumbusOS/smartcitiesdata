@@ -6,7 +6,7 @@ on:
       - master
 
 env:
-  commit_range: ${{ github.event_name == 'push' && format('{0}..{1}', github.event.push.before, github.event.push.head) || 'origin/master' }}
+  commit_range: ${{ github.event_name == 'push' && format('{0}...{1}', github.event.push.before, github.event.push.head) || format('{0}...{1}', github.base_ref, github.head_ref)}}
 
 jobs:
   common-checks:
@@ -41,10 +41,9 @@ jobs:
       - name: Check If Should Run
         id: pre_check
         run: |
-          echo ignore:apps/andi >> ${HOME}/ignore
-          # git diff --exit-code --quiet ${{ env.commit_range }} -- mix.lock apps/pipeline apps/dead_letter apps/andi \
-          #   && echo "::set-output name=should_run::true" \
-          #   || echo "::set-output name=should_run::false"
+          git diff --exit-code --quiet ${{ env.commit_range }} -- mix.lock apps/pipeline apps/dead_letter apps/andi \
+            && echo "::set-output name=should_run::true" \
+            || echo "::set-output name=should_run::false"
       - name: Setup Elixir
         if: steps.pre_check.outputs.should_run == 'true'
         uses: actions/setup-elixir@v1.2.0
